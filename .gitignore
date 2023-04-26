@@ -1,0 +1,12 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.rds
+*.bam
+*.out
+*.txt
+*.csv
+*.sort
+*.bed
+*.sizes
