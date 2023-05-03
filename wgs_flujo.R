@@ -1383,19 +1383,24 @@ filtrado_general <- function(output_dir, fastq_dir) {
   retorno2 <- filtrado_2(retorno)
   retorno3 <- filtrado_3(retorno2)
   
-  write.csv(retorno, file = file.path(directorio_salida, paste(
+  directorio_salida.crudo <- file.path(directorio_salida,"filtrado_sin_comparar")
+  if(!dir.exists(directorio_salida.crudo)){
+    dir.create(directorio_salida.crudo)
+  }
+  
+  write.csv(retorno, file = file.path(directorio_salida.crudo, paste(
     codigo,
     paste0("filtrado_1_thresh_", threshold),
     ".csv",
     sep = "_"
   )))
-  write.csv(retorno2, file = file.path(directorio_salida, paste(
+  write.csv(retorno2, file = file.path(directorio_salida.crudo, paste(
     codigo,
     paste0("filtrado_2_thresh_", threshold),
     ".csv",
     sep = "_"
   )))
-  write.csv(retorno3, file = file.path(directorio_salida, paste(
+  write.csv(retorno3, file = file.path(directorio_salida.crudo, paste(
     codigo,
     paste0("filtrado_3_thresh_", threshold),
     ".csv",
@@ -1408,19 +1413,19 @@ filtrado_general <- function(output_dir, fastq_dir) {
   retorno2 <- filtrado_2(retorno)
   retorno3 <- filtrado_3(retorno2)
   
-  write.csv(retorno, file = file.path(directorio_salida, paste(
+  write.csv(retorno, file = file.path(directorio_salida.crudo, paste(
     codigo,
     paste0("filtrado_1_thresh_", threshold),
     ".csv",
     sep = "_"
   )))
-  write.csv(retorno2, file = file.path(directorio_salida, paste(
+  write.csv(retorno2, file = file.path(directorio_salida.crudo, paste(
     codigo,
     paste0("filtrado_2_thresh_", threshold),
     ".csv",
     sep = "_"
   )))
-  write.csv(retorno3, file = file.path(directorio_salida, paste(
+  write.csv(retorno3, file = file.path(directorio_salida.crudo, paste(
     codigo,
     paste0("filtrado_3_thresh_", threshold),
     ".csv",
@@ -1450,20 +1455,23 @@ filtrado_general <- function(output_dir, fastq_dir) {
   retorno <- filtrado_1(exoma.comparado, threshold)
   retorno2 <- filtrado_2(retorno)
   retorno3 <- filtrado_3(retorno2)
-  
-  write.csv(retorno, file = file.path(directorio_salida, paste(
+  directorio_salida.comparando <- file.path(directorio_salida,"comparando_bd_lab")
+  if(!dir.exists(directorio_salida.comparando)){
+    dir.create(directorio_salida.comparando)
+  }
+  write.csv(retorno, file = file.path(directorio_salida.comparando, paste(
     codigo,
     paste0("filtrado_1_comparado_thresh_", threshold),
     ".csv",
     sep = "_"
   )))
-  write.csv(retorno2, file = file.path(directorio_salida, paste(
+  write.csv(retorno2, file = file.path(directorio_salida.comparando, paste(
     codigo,
     paste0("filtrado_2_comparado_thresh_", threshold),
     ".csv",
     sep = "_"
   )))
-  write.csv(retorno3, file = file.path(directorio_salida, paste(
+  write.csv(retorno3, file = file.path(directorio_salida.comparando, paste(
     codigo,
     paste0("filtrado_3_comparado_thresh_", threshold),
     ".csv",
@@ -1476,19 +1484,19 @@ filtrado_general <- function(output_dir, fastq_dir) {
   retorno2 <- filtrado_2(retorno)
   retorno3 <- filtrado_3(retorno2)
   
-  write.csv(retorno, file = file.path(directorio_salida, paste(
+  write.csv(retorno, file = file.path(directorio_salida.comparando, paste(
     codigo,
     paste0("filtrado_1_comparado_thresh_", threshold),
     ".csv",
     sep = "_"
   )))
-  write.csv(retorno2, file = file.path(directorio_salida, paste(
+  write.csv(retorno2, file = file.path(directorio_salida.comparando, paste(
     codigo,
     paste0("filtrado_2_comparado_thresh_", threshold),
     ".csv",
     sep = "_"
   )))
-  write.csv(retorno3, file = file.path(directorio_salida, paste(
+  write.csv(retorno3, file = file.path(directorio_salida.comparando, paste(
     codigo,
     paste0("filtrado_3_comparado_thresh_", threshold),
     ".csv",
