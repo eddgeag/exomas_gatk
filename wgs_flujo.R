@@ -1,15 +1,32 @@
 #### CARGAMOS LAS LIBRERIAS
-library(tools)
-library(Rbwa)
-library(dplyr)
-library(ggplot2)
-library(ggpubr)
-library(egg)
-library(grid)
-library(limma)
-library(data.table)
 
 
+
+load.libs <- c(
+  "data.table",
+  "limma",
+  "grid",
+  "egg",
+  "Rbwa",
+  "ggpubr",
+  "tools",
+  "DOSE",
+  "GO.db",
+  "GSEABase",
+  "org.Hs.eg.db",
+  "clusterProfiler",
+  "dplyr",
+  "tidyr",
+  "ggplot2",
+  "stringr",
+  "RColorBrewer",
+  "rWikiPathways",
+  "RCy3",
+  "RISmed",
+  "ggplot2",
+  "dplyr")
+
+lapply(load.libs, require, character.only = TRUE)
 
 
 
@@ -1311,7 +1328,7 @@ computo_frecuencias <- function(output_dir, fastq_dir) {
               "post_process_results",
               paste0(codigo, "_GATK_CODIGO_HPO/"))
   
-  archivo <- list.files(directorio, full.names = T)[1]
+  archivo <- list.files(directorio, full.names = T,pattern = ".csv")
   
   
   X <- read.csv(archivo, header = T, row.names = NULL)
@@ -1508,6 +1525,223 @@ filtrado_general <- function(output_dir, fastq_dir) {
 }
 
 
+filtrado_vias <- function(output_dir,fastq_dir){
+  fastq_files <- list.files(fastq_dir, full.names = F)
+  in_file <-
+    unlist(strsplit(gsub("R[12]", "map", fastq_files[1]), "/"))
+  in_file_tmp <- file_path_sans_ext(in_file)
+  codigo <- unlist(strsplit(in_file_tmp, "_"))[1]
+  
+  directorio_salida <- file.path(output_dir, "post_process_results")
+  directorio_salida <-
+    file.path(directorio_salida,
+              paste(codigo, "GATK_CODIGO_HPO", sep = "_"))
+  
+  exoma.archivo <-
+    file.path(directorio_salida,
+              paste(codigo, "GATK_CODIGO_HPO.csv", sep = "_"))
+  
+  exoma <- read.csv(exoma.archivo)
+  freqs <- read.csv("./frecuencias_alelicas_lab.csv")
+  
+  genes_univ <- unique(freqs$Gene.refGene)
+  exoma_goi <- unique(exoma$Gene.refGene)
+  
+  goi <- clusterProfiler::bitr(exoma_goi,fromType = "SYMBOL",toType = "ENTREZID",OrgDb = org.Hs.eg.db)
+  universe <- clusterProfiler::bitr(genes_univ,fromType = "SYMBOL",toType = "ENTREZID",OrgDb = org.Hs.eg.db)
+  
+  
+  
+  ewp.up <- clusterProfiler::enrichWP(
+    goi[,2],
+    universe = universe[,2],
+    organism = "Homo sapiens",
+    pAdjustMethod = "fdr",
+    pvalueCutoff = 0.05, #p.adjust cutoff; relaxed for demo purposes
+  )
+  
+  ewp.up <- DOSE::setReadable(ewp.up, org.Hs.eg.db, keyType = "ENTREZID")
+  
+  resultados.1 <- ewp.up@result
+  resultados.1 <- resultados.1[order(resultados.1$pvalue),]
+  
+  p1 <- ggplot(resultados.1[1:20,], aes(x=Description, y=Count, fill=pvalue)) +
+    geom_bar(stat = "identity") +
+    coord_flip() +
+    scale_fill_continuous(low="blue", high="red") +
+    labs(x = "", y = "", fill = "p.value") +
+    theme(axis.text=element_text(size=11))  
+  
+  ggsave(filename=file.path(directorio_salida,"vias.jpeg"),plot=p1)
+  
+  ewp.up <- DOSE::setReadable(ewp.up, org.Hs.eg.db, keyType = "ENTREZID")
+  resultados.1 <- ewp.up@result
+  resultados.1 <- resultados.1[order(resultados.1$pvalue),]
+  
+  goi2 <- unlist(strsplit(resultados.1$geneID,"/"))
+  goi2 <- clusterProfiler::bitr(goi2,fromType = "SYMBOL",toType = "ENTREZID",OrgDb = org.Hs.eg.db)
+  
+  dose <- DOSE::enrichDO(goi2[,2])
+  dose <- DOSE::setReadable(dose, org.Hs.eg.db, keyType = "ENTREZID")
+  
+  resultado3 <- dose@result[order(dose@result$p.adjust),]
+  p2 <- ggplot(resultado3[1:20,], aes(x=Description, y=Count, fill=-log(p.adjust))) +
+    geom_bar(stat = "identity") +
+    coord_flip() +
+    scale_fill_continuous(low="blue", high="red") +
+    labs(x = "", y = "", fill = "p.adjust") +
+    theme(axis.text=element_text(size=11))  
+  ggsave(filename=file.path(directorio_salida,"patologias.jpeg"),plot=p2)
+  
+  
+  pathos.list <- list()
+  pathos <- resultado3
+  for(l in 1:dim(pathos)[1]){
+    repeticion <- length(unlist(strsplit(pathos$geneID[l],"/")))
+    pathos.list[[l]] <- data.frame(patologia =rep(pathos$Description[l],repeticion),
+                                   Gene.refGene = unlist(strsplit(pathos$geneID[l],"/")),
+                                   p_value = rep(pathos$pvalue[l],repeticion),
+                                   p_adjust = rep(pathos$p.adjust[l],repeticion))
+    
+    
+  }
+  
+  pathos.df <- (Reduce(rbind,pathos.list))
+  
+  final <- left_join(exoma,pathos.df,by="Gene.refGene")
+  
+  
+  threshold <- 1
+  
+  retorno <- filtrado_1(final, threshold)
+  retorno2 <- filtrado_2(retorno)
+  retorno3 <- filtrado_3(retorno2)
+  
+  directorio_salida.crudo <- file.path(directorio_salida,"filtrado_sin_comparar_vias")
+  if(!dir.exists(directorio_salida.crudo)){
+    dir.create(directorio_salida.crudo)
+  }
+  
+  write.csv(retorno, file = file.path(directorio_salida.crudo, paste(
+    codigo,
+    paste0("filtrado_1_thresh_", threshold),
+    ".csv",
+    sep = "_"
+  )))
+  write.csv(retorno2, file = file.path(directorio_salida.crudo, paste(
+    codigo,
+    paste0("filtrado_2_thresh_", threshold),
+    ".csv",
+    sep = "_"
+  )))
+  write.csv(retorno3, file = file.path(directorio_salida.crudo, paste(
+    codigo,
+    paste0("filtrado_3_thresh_", threshold),
+    ".csv",
+    sep = "_"
+  )))
+  
+  threshold <- 0.02
+  
+  retorno <- filtrado_1(final, threshold)
+  retorno2 <- filtrado_2(retorno)
+  retorno3 <- filtrado_3(retorno2)
+  
+  write.csv(retorno, file = file.path(directorio_salida.crudo, paste(
+    codigo,
+    paste0("filtrado_1_thresh_", threshold),
+    ".csv",
+    sep = "_"
+  )))
+  write.csv(retorno2, file = file.path(directorio_salida.crudo, paste(
+    codigo,
+    paste0("filtrado_2_thresh_", threshold),
+    ".csv",
+    sep = "_"
+  )))
+  write.csv(retorno3, file = file.path(directorio_salida.crudo, paste(
+    codigo,
+    paste0("filtrado_3_thresh_", threshold),
+    ".csv",
+    sep = "_"
+  )))
+  
+  ### ahroa vamos con la comparativa
+  
+  freq_alelicas <- read.csv("./frecuencias_alelicas_lab.csv")
+  freq_alelicas <-
+    freq_alelicas[!duplicated(freq_alelicas[, c("Start", "End", "paste_m")]),]
+  
+  unicas <-
+    freq_alelicas[grep(paste0("^", codigo, "$"), freq_alelicas$paste_m),]
+  print(colnames(freq_alelicas))
+  exoma.comparado <-
+    left_join(
+      final,
+      unicas,
+      by = c("Start", "End", "Chr", "Gene.refGene")
+      ,
+      relationship = "many-to-many"
+    )
+  
+  threshold <- 1
+  
+  retorno <- filtrado_1(exoma.comparado, threshold)
+  retorno2 <- filtrado_2(retorno)
+  retorno3 <- filtrado_3(retorno2)
+  directorio_salida.comparando <- file.path(directorio_salida,"comparando_bd_lab_vias")
+  if(!dir.exists(directorio_salida.comparando)){
+    dir.create(directorio_salida.comparando)
+  }
+  write.csv(retorno, file = file.path(directorio_salida.comparando, paste(
+    codigo,
+    paste0("filtrado_1_comparado_thresh_", threshold),
+    ".csv",
+    sep = "_"
+  )))
+  write.csv(retorno2, file = file.path(directorio_salida.comparando, paste(
+    codigo,
+    paste0("filtrado_2_comparado_thresh_", threshold),
+    ".csv",
+    sep = "_"
+  )))
+  write.csv(retorno3, file = file.path(directorio_salida.comparando, paste(
+    codigo,
+    paste0("filtrado_3_comparado_thresh_", threshold),
+    ".csv",
+    sep = "_"
+  )))
+  
+  threshold <- 0.02
+  
+  retorno <- filtrado_1(exoma.comparado, threshold)
+  retorno2 <- filtrado_2(retorno)
+  retorno3 <- filtrado_3(retorno2)
+  
+  write.csv(retorno, file = file.path(directorio_salida.comparando, paste(
+    codigo,
+    paste0("filtrado_1_comparado_thresh_", threshold),
+    ".csv",
+    sep = "_"
+  )))
+  write.csv(retorno2, file = file.path(directorio_salida.comparando, paste(
+    codigo,
+    paste0("filtrado_2_comparado_thresh_", threshold),
+    ".csv",
+    sep = "_"
+  )))
+  write.csv(retorno3, file = file.path(directorio_salida.comparando, paste(
+    codigo,
+    paste0("filtrado_3_comparado_thresh_", threshold),
+    ".csv",
+    sep = "_"
+  )))
+  
+  
+  
+  
+}
+
 muestras <- c("DX010-23")
 for (muestra in muestras) {
   pipeline_dir <- "/repositorio/exomas/pipeline"
@@ -1571,6 +1805,8 @@ for (muestra in muestras) {
   computo_frecuencias(output_dir, fastq_dir)
   
   filtrado_general(output_dir, fastq_dir)
+  
+  filtrado_vias(output_dir,fastq_dir )
   
   print(paste("YA TERMINO LA MUESTRA ", muestra))
   
