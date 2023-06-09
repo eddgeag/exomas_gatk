@@ -1476,6 +1476,12 @@ filtrado_general <- function(output_dir, fastq_dir) {
   if(!dir.exists(directorio_salida.comparando)){
     dir.create(directorio_salida.comparando)
   }
+  write.csv(exoma.comparado,file=file.path(directorio_salida.comparando, paste(
+    codigo,
+    paste0("comparado_sin_filtrar", threshold),
+    ".csv",
+    sep = "_"
+  )))
   write.csv(retorno, file = file.path(directorio_salida.comparando, paste(
     codigo,
     paste0("filtrado_1_comparado_thresh_", threshold),
@@ -1622,6 +1628,12 @@ filtrado_vias <- function(output_dir,fastq_dir){
     dir.create(directorio_salida.crudo)
   }
   
+  write.csv(final,file=file.path(directorio_salida.crudo, paste(
+    codigo,
+    paste0("crudo_patologia", threshold),
+    ".csv",
+    sep = "_"
+  )))
   write.csv(retorno, file = file.path(directorio_salida.crudo, paste(
     codigo,
     paste0("filtrado_1_thresh_", threshold),
@@ -1686,6 +1698,8 @@ filtrado_vias <- function(output_dir,fastq_dir){
   
   threshold <- 1
   
+  
+  
   retorno <- filtrado_1(exoma.comparado, threshold)
   retorno2 <- filtrado_2(retorno)
   retorno3 <- filtrado_3(retorno2)
@@ -1693,6 +1707,13 @@ filtrado_vias <- function(output_dir,fastq_dir){
   if(!dir.exists(directorio_salida.comparando)){
     dir.create(directorio_salida.comparando)
   }
+  
+  write.csv(exoma.comparado,file=file.path(directorio_salida.comparando, paste(
+    codigo,
+    paste0("crudo_patologia_vias", threshold),
+    ".csv",
+    sep = "_"
+  )))
   write.csv(retorno, file = file.path(directorio_salida.comparando, paste(
     codigo,
     paste0("filtrado_1_comparado_thresh_", threshold),
@@ -1742,7 +1763,7 @@ filtrado_vias <- function(output_dir,fastq_dir){
   
 }
 
-muestras <- c("DX010-23")
+muestras <- c("DX012-23")
 for (muestra in muestras) {
   pipeline_dir <- "/repositorio/exomas/pipeline"
   fastq_dir <- file.path(pipeline_dir, muestra, "fastqfiles")
