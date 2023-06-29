@@ -1338,7 +1338,7 @@ computo_frecuencias <- function(output_dir, fastq_dir) {
   
   
   
-  if (!any(!names(todos) == codigo)) {
+  if (!any(names(todos) == codigo)) {
     todos[[codigo]] <- X
     
     
@@ -1348,8 +1348,7 @@ computo_frecuencias <- function(output_dir, fastq_dir) {
     X_new <- lapply(todos, function(df)
       df[, common_cols])
     
-    
-    
+    X_new <- lapply(X_new, function(x) as.data.frame(apply(x,2,as.character)))
     df <- bind_rows(X_new) %>%
       select(codigo, cigosidad, AF, Chr, Start, End, Gene.refGene) %>% group_by(Chr, Start, End, Gene.refGene) %>%
       summarise(AF = (sum(cigosidad == "HETZ") + 2 * sum(cigosidad == "HOMZ_ALT")) /
@@ -1459,7 +1458,7 @@ filtrado_general <- function(output_dir, fastq_dir) {
     freq_alelicas[grep(paste0("^", codigo, "$"), freq_alelicas$paste_m),]
   print(colnames(freq_alelicas))
   exoma.comparado <-
-    left_join(
+    inner_join(
       exoma,
       unicas,
       by = c("Start", "End", "Chr", "Gene.refGene")
@@ -1467,6 +1466,7 @@ filtrado_general <- function(output_dir, fastq_dir) {
       relationship = "many-to-many"
     )
   
+
   threshold <- 1
   
   retorno <- filtrado_1(exoma.comparado, threshold)
@@ -1532,6 +1532,7 @@ filtrado_general <- function(output_dir, fastq_dir) {
 
 
 filtrado_vias <- function(output_dir,fastq_dir){
+  
   fastq_files <- list.files(fastq_dir, full.names = F)
   in_file <-
     unlist(strsplit(gsub("R[12]", "map", fastq_files[1]), "/"))
@@ -1688,7 +1689,7 @@ filtrado_vias <- function(output_dir,fastq_dir){
     freq_alelicas[grep(paste0("^", codigo, "$"), freq_alelicas$paste_m),]
   print(colnames(freq_alelicas))
   exoma.comparado <-
-    left_join(
+    inner_join(
       final,
       unicas,
       by = c("Start", "End", "Chr", "Gene.refGene")
@@ -1763,7 +1764,7 @@ filtrado_vias <- function(output_dir,fastq_dir){
   
 }
 
-muestras <- c("DX012-23")
+muestras <- c("DX019-23")
 for (muestra in muestras) {
   pipeline_dir <- "/repositorio/exomas/pipeline"
   fastq_dir <- file.path(pipeline_dir, muestra, "fastqfiles")
@@ -1824,11 +1825,11 @@ for (muestra in muestras) {
   pretratado(output_dir, fastq_dir)
   
   computo_frecuencias(output_dir, fastq_dir)
-  
+  # 
   filtrado_general(output_dir, fastq_dir)
-  
+  # 
   filtrado_vias(output_dir,fastq_dir )
-  
+  # 
   print(paste("YA TERMINO LA MUESTRA ", muestra))
   
 }
