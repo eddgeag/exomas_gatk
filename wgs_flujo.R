@@ -227,8 +227,8 @@ bwamem <- function(fastq_dir = fastq_dir ,
     system(command_out_bam_sorted, intern = T)
     ### AHORA SE PROCEDERIA A MERGE LOS BAMS EN CASO DE TRIO
     
-  } else if (file.exists(output_file_sam) &&
-             !file.exists(output_file_bam) &&
+  } else if (file.exists(output_file_bam) &&
+             !file.exists(output_file_sam) &&
              !file.exists(output_file_sorted_bam)) {
     print("#### SAM TO BAM")
     
@@ -1340,6 +1340,8 @@ computo_frecuencias <- function(output_dir, fastq_dir) {
   
   if (!any(names(todos) == codigo)) {
     todos[[codigo]] <- X
+    saveRDS(todos,"./todos.rds")
+  }
     
     
     todos <- lapply(todos, as.data.frame)
@@ -1370,9 +1372,9 @@ computo_frecuencias <- function(output_dir, fastq_dir) {
     
     
     write.csv(df.final, "./frecuencias_alelicas_lab.csv")
-  } else{
+
     print("YA SE TIENE EN CUENTA LA FRECUENCIA ALELICA NUEVA")
-  }
+  
 }
 
 filtrado_general <- function(output_dir, fastq_dir) {
@@ -1829,7 +1831,9 @@ for (muestra in muestras) {
   filtrado_general(output_dir, fastq_dir)
   # 
   filtrado_vias(output_dir,fastq_dir )
+  
   # 
+  # snpeff(output_dir,folder_fasta)
   print(paste("YA TERMINO LA MUESTRA ", muestra))
   
 }
