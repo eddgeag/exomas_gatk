@@ -1699,6 +1699,21 @@ filtrado_vias <- function(output_dir,fastq_dir){
       relationship = "many-to-many"
     )
   
+  
+  csa <- right_join(exoma,unicas,by = c("Chr","Start","End","Gene.refGene"))
+  #
+  csa <- csa[!duplicated(csa$Start),]
+  
+  unicas_variantes  <- csa
+  
+  directorio_salida.unicas.variantes <-  file.path(directorio_salida,
+                                                   "unicas_variantes")
+  if(!dir.exists(directorio_salida.unicas.variantes)){
+    dir.create(directorio_salida.unicas.variantes)
+  }
+  
+  write.csv(unicas_variantes,file = file.path(directorio_salida.unicas.variantes,"pasunicas_variantes.csv"))
+  
   threshold <- 1
   
   
@@ -1766,7 +1781,7 @@ filtrado_vias <- function(output_dir,fastq_dir){
   
 }
 
-muestras <- c("DX019-23")
+muestras <- c("407790")
 for (muestra in muestras) {
   pipeline_dir <- "/repositorio/exomas/pipeline"
   fastq_dir <- file.path(pipeline_dir, muestra, "fastqfiles")
@@ -1833,7 +1848,7 @@ for (muestra in muestras) {
   filtrado_vias(output_dir,fastq_dir )
   
   # 
-  # snpeff(output_dir,folder_fasta)
+  snpeff(output_dir,folder_fasta)
   print(paste("YA TERMINO LA MUESTRA ", muestra))
   
 }
