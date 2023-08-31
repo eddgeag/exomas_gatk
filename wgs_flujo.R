@@ -24,7 +24,8 @@ load.libs <- c(
   "RCy3",
   "RISmed",
   "ggplot2",
-  "dplyr")
+  "dplyr"
+)
 
 lapply(load.libs, require, character.only = TRUE)
 
@@ -920,6 +921,9 @@ snpeff <- function(output_dir, folder_fasta) {
 }
 
 
+
+
+
 export_tsv <- function(folder_fasta, output_dir, fastq_dir) {
   fastq_files <- list.files(fastq_dir, full.names = F)
   output_file_name <-
@@ -1252,7 +1256,8 @@ pretratado <- function(output_dir, fastq_dir) {
       stop(errorCondition(message = "Hay homocigotos regerefetes"))
     }
     cigosidad <-
-      ifelse(midf$GT == "1/1" | midf$GT == "1|1", "HOMZ_ALT", "HETZ")
+      ifelse(midf$GT == "1/1" |
+               midf$GT == "1|1", "HOMZ_ALT", "HETZ")
     
     midf <- as.data.table(midf)
     midf <- bind_cols(codigo = codigo, cigosidad = cigosidad, midf)
@@ -1261,7 +1266,7 @@ pretratado <- function(output_dir, fastq_dir) {
     hpo_ <- aggregate(V4 ~ V2, hpo, FUN = paste, collapse = ";")
     colnames(hpo_) <- c("Gene.refGene", "hpo")
     midf <- left_join(midf, hpo_, by = "Gene.refGene")
-
+    
     if (!dir.exists(directorio_salida)) {
       dir.create(directorio_salida, recursive = T)
     }
@@ -1328,7 +1333,8 @@ computo_frecuencias <- function(output_dir, fastq_dir) {
               "post_process_results",
               paste0(codigo, "_GATK_CODIGO_HPO/"))
   
-  archivo <- list.files(directorio, full.names = T,pattern = ".csv")
+  archivo <-
+    list.files(directorio, full.names = T, pattern = ".csv")
   
   
   X <- read.csv(archivo, header = T, row.names = NULL)
@@ -1340,40 +1346,42 @@ computo_frecuencias <- function(output_dir, fastq_dir) {
   
   if (!any(names(todos) == codigo)) {
     todos[[codigo]] <- X
-    saveRDS(todos,"./todos.rds")
+    saveRDS(todos, "./todos.rds")
   }
-    
-    
-    todos <- lapply(todos, as.data.frame)
-    common_cols <- Reduce(intersect, lapply(todos, colnames))
-    
-    X_new <- lapply(todos, function(df)
-      df[, common_cols])
-    
-    X_new <- lapply(X_new, function(x) as.data.frame(apply(x,2,as.character)))
-    df <- bind_rows(X_new) %>%
-      select(codigo, cigosidad, AF, Chr, Start, End, Gene.refGene) %>% group_by(Chr, Start, End, Gene.refGene) %>%
-      summarise(AF = (sum(cigosidad == "HETZ") + 2 * sum(cigosidad == "HOMZ_ALT")) /
-                  (2 * n()))
-    
-    cromosomas <- c(paste0("chr", 1:22), "X", "Y")
-    
-    
-    df <- bind_rows(X_new) %>%
-      select(codigo, cigosidad, AF, Chr, Start, End, Gene.refGene) %>% group_by(Chr, Start, End, Gene.refGene) %>%
-      summarise(
-        paste_m = toString(codigo),
-        n = n(),
-        AF = (sum(cigosidad == "HETZ") + 2 * sum(cigosidad == "HOMZ_ALT")) / (2 *
-                                                                                n())
-      )
-    
-    df.final <- df[df$Chr %in% cromosomas,]
-    
-    
-    write.csv(df.final, "./frecuencias_alelicas_lab.csv")
-
-    print("YA SE TIENE EN CUENTA LA FRECUENCIA ALELICA NUEVA")
+  
+  
+  todos <- lapply(todos, as.data.frame)
+  common_cols <- Reduce(intersect, lapply(todos, colnames))
+  
+  X_new <- lapply(todos, function(df)
+    df[, common_cols])
+  
+  X_new <-
+    lapply(X_new, function(x)
+      as.data.frame(apply(x, 2, as.character)))
+  df <- bind_rows(X_new) %>%
+    select(codigo, cigosidad, AF, Chr, Start, End, Gene.refGene) %>% group_by(Chr, Start, End, Gene.refGene) %>%
+    summarise(AF = (sum(cigosidad == "HETZ") + 2 * sum(cigosidad == "HOMZ_ALT")) /
+                (2 * n()))
+  
+  cromosomas <- c(paste0("chr", 1:22), "chrX", "chrY")
+  
+  
+  df <- bind_rows(X_new) %>%
+    select(codigo, cigosidad, AF, Chr, Start, End, Gene.refGene) %>% group_by(Chr, Start, End, Gene.refGene) %>%
+    summarise(
+      paste_m = toString(codigo),
+      n = n(),
+      AF = (sum(cigosidad == "HETZ") + 2 * sum(cigosidad == "HOMZ_ALT")) / (2 *
+                                                                              n())
+    )
+  
+  df.final <- df[df$Chr %in% cromosomas,]
+  
+  
+  write.csv(df.final, "./frecuencias_alelicas_lab.csv")
+  
+  print("YA SE TIENE EN CUENTA LA FRECUENCIA ALELICA NUEVA")
   
 }
 
@@ -1401,29 +1409,39 @@ filtrado_general <- function(output_dir, fastq_dir) {
   retorno2 <- filtrado_2(retorno)
   retorno3 <- filtrado_3(retorno2)
   
-  directorio_salida.crudo <- file.path(directorio_salida,"filtrado_sin_comparar")
-  if(!dir.exists(directorio_salida.crudo)){
+  directorio_salida.crudo <-
+    file.path(directorio_salida, "filtrado_sin_comparar")
+  if (!dir.exists(directorio_salida.crudo)) {
     dir.create(directorio_salida.crudo)
   }
   
-  write.csv(retorno, file = file.path(directorio_salida.crudo, paste(
-    codigo,
-    paste0("filtrado_1_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno2, file = file.path(directorio_salida.crudo, paste(
-    codigo,
-    paste0("filtrado_2_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno3, file = file.path(directorio_salida.crudo, paste(
-    codigo,
-    paste0("filtrado_3_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
+  write.csv(retorno, file = file.path(
+    directorio_salida.crudo,
+    paste(
+      codigo,
+      paste0("filtrado_1_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
+  write.csv(retorno2, file = file.path(
+    directorio_salida.crudo,
+    paste(
+      codigo,
+      paste0("filtrado_2_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
+  write.csv(retorno3, file = file.path(
+    directorio_salida.crudo,
+    paste(
+      codigo,
+      paste0("filtrado_3_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
   
   threshold <- 0.02
   
@@ -1431,24 +1449,33 @@ filtrado_general <- function(output_dir, fastq_dir) {
   retorno2 <- filtrado_2(retorno)
   retorno3 <- filtrado_3(retorno2)
   
-  write.csv(retorno, file = file.path(directorio_salida.crudo, paste(
-    codigo,
-    paste0("filtrado_1_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno2, file = file.path(directorio_salida.crudo, paste(
-    codigo,
-    paste0("filtrado_2_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno3, file = file.path(directorio_salida.crudo, paste(
-    codigo,
-    paste0("filtrado_3_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
+  write.csv(retorno, file = file.path(
+    directorio_salida.crudo,
+    paste(
+      codigo,
+      paste0("filtrado_1_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
+  write.csv(retorno2, file = file.path(
+    directorio_salida.crudo,
+    paste(
+      codigo,
+      paste0("filtrado_2_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
+  write.csv(retorno3, file = file.path(
+    directorio_salida.crudo,
+    paste(
+      codigo,
+      paste0("filtrado_3_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
   
   ### ahroa vamos con la comparativa
   
@@ -1468,40 +1495,54 @@ filtrado_general <- function(output_dir, fastq_dir) {
       relationship = "many-to-many"
     )
   
-
+  
   threshold <- 1
   
   retorno <- filtrado_1(exoma.comparado, threshold)
   retorno2 <- filtrado_2(retorno)
   retorno3 <- filtrado_3(retorno2)
-  directorio_salida.comparando <- file.path(directorio_salida,"comparando_bd_lab")
-  if(!dir.exists(directorio_salida.comparando)){
+  directorio_salida.comparando <-
+    file.path(directorio_salida, "comparando_bd_lab")
+  if (!dir.exists(directorio_salida.comparando)) {
     dir.create(directorio_salida.comparando)
   }
-  write.csv(exoma.comparado,file=file.path(directorio_salida.comparando, paste(
-    codigo,
-    paste0("comparado_sin_filtrar", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno, file = file.path(directorio_salida.comparando, paste(
-    codigo,
-    paste0("filtrado_1_comparado_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno2, file = file.path(directorio_salida.comparando, paste(
-    codigo,
-    paste0("filtrado_2_comparado_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno3, file = file.path(directorio_salida.comparando, paste(
-    codigo,
-    paste0("filtrado_3_comparado_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
+  write.csv(exoma.comparado,
+            file = file.path(
+              directorio_salida.comparando,
+              paste(
+                codigo,
+                paste0("comparado_sin_filtrar", threshold),
+                ".csv",
+                sep = "_"
+              )
+            ))
+  write.csv(retorno, file = file.path(
+    directorio_salida.comparando,
+    paste(
+      codigo,
+      paste0("filtrado_1_comparado_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
+  write.csv(retorno2, file = file.path(
+    directorio_salida.comparando,
+    paste(
+      codigo,
+      paste0("filtrado_2_comparado_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
+  write.csv(retorno3, file = file.path(
+    directorio_salida.comparando,
+    paste(
+      codigo,
+      paste0("filtrado_3_comparado_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
   
   threshold <- 0.02
   
@@ -1509,32 +1550,40 @@ filtrado_general <- function(output_dir, fastq_dir) {
   retorno2 <- filtrado_2(retorno)
   retorno3 <- filtrado_3(retorno2)
   
-  write.csv(retorno, file = file.path(directorio_salida.comparando, paste(
-    codigo,
-    paste0("filtrado_1_comparado_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno2, file = file.path(directorio_salida.comparando, paste(
-    codigo,
-    paste0("filtrado_2_comparado_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno3, file = file.path(directorio_salida.comparando, paste(
-    codigo,
-    paste0("filtrado_3_comparado_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
+  write.csv(retorno, file = file.path(
+    directorio_salida.comparando,
+    paste(
+      codigo,
+      paste0("filtrado_1_comparado_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
+  write.csv(retorno2, file = file.path(
+    directorio_salida.comparando,
+    paste(
+      codigo,
+      paste0("filtrado_2_comparado_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
+  write.csv(retorno3, file = file.path(
+    directorio_salida.comparando,
+    paste(
+      codigo,
+      paste0("filtrado_3_comparado_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
   
   
   
 }
 
 
-filtrado_vias <- function(output_dir,fastq_dir){
-  
+filtrado_vias <- function(output_dir, fastq_dir) {
   fastq_files <- list.files(fastq_dir, full.names = F)
   in_file <-
     unlist(strsplit(gsub("R[12]", "map", fastq_files[1]), "/"))
@@ -1556,68 +1605,95 @@ filtrado_vias <- function(output_dir,fastq_dir){
   genes_univ <- unique(freqs$Gene.refGene)
   exoma_goi <- unique(exoma$Gene.refGene)
   
-  goi <- clusterProfiler::bitr(exoma_goi,fromType = "SYMBOL",toType = "ENTREZID",OrgDb = org.Hs.eg.db)
-  universe <- clusterProfiler::bitr(genes_univ,fromType = "SYMBOL",toType = "ENTREZID",OrgDb = org.Hs.eg.db)
+  goi <-
+    clusterProfiler::bitr(exoma_goi,
+                          fromType = "SYMBOL",
+                          toType = "ENTREZID",
+                          OrgDb = org.Hs.eg.db)
+  universe <-
+    clusterProfiler::bitr(genes_univ,
+                          fromType = "SYMBOL",
+                          toType = "ENTREZID",
+                          OrgDb = org.Hs.eg.db)
   
   
   
   ewp.up <- clusterProfiler::enrichWP(
-    goi[,2],
-    universe = universe[,2],
+    goi[, 2],
+    universe = universe[, 2],
     organism = "Homo sapiens",
     pAdjustMethod = "fdr",
-    pvalueCutoff = 0.05, #p.adjust cutoff; relaxed for demo purposes
+    pvalueCutoff = 0.05,
+    #p.adjust cutoff; relaxed for demo purposes
   )
   
-  ewp.up <- DOSE::setReadable(ewp.up, org.Hs.eg.db, keyType = "ENTREZID")
+  ewp.up <-
+    DOSE::setReadable(ewp.up, org.Hs.eg.db, keyType = "ENTREZID")
   
   resultados.1 <- ewp.up@result
   resultados.1 <- resultados.1[order(resultados.1$pvalue),]
   
-  p1 <- ggplot(resultados.1[1:20,], aes(x=Description, y=Count, fill=pvalue)) +
+  p1 <-
+    ggplot(resultados.1[1:20,], aes(x = Description, y = Count, fill = pvalue)) +
     geom_bar(stat = "identity") +
     coord_flip() +
-    scale_fill_continuous(low="blue", high="red") +
+    scale_fill_continuous(low = "blue", high = "red") +
     labs(x = "", y = "", fill = "p.value") +
-    theme(axis.text=element_text(size=11))  
+    theme(axis.text = element_text(size = 11))
   
-  ggsave(filename=file.path(directorio_salida,"vias.jpeg"),plot=p1)
+  ggsave(filename = file.path(directorio_salida, "vias.jpeg"),
+         plot = p1)
   
-  ewp.up <- DOSE::setReadable(ewp.up, org.Hs.eg.db, keyType = "ENTREZID")
+  ewp.up <-
+    DOSE::setReadable(ewp.up, org.Hs.eg.db, keyType = "ENTREZID")
   resultados.1 <- ewp.up@result
   resultados.1 <- resultados.1[order(resultados.1$pvalue),]
   
-  goi2 <- unlist(strsplit(resultados.1$geneID,"/"))
-  goi2 <- clusterProfiler::bitr(goi2,fromType = "SYMBOL",toType = "ENTREZID",OrgDb = org.Hs.eg.db)
+  goi2 <- unlist(strsplit(resultados.1$geneID, "/"))
+  goi2 <-
+    clusterProfiler::bitr(goi2,
+                          fromType = "SYMBOL",
+                          toType = "ENTREZID",
+                          OrgDb = org.Hs.eg.db)
   
-  dose <- DOSE::enrichDO(goi2[,2])
-  dose <- DOSE::setReadable(dose, org.Hs.eg.db, keyType = "ENTREZID")
+  dose <- DOSE::enrichDO(goi2[, 2])
+  dose <-
+    DOSE::setReadable(dose, org.Hs.eg.db, keyType = "ENTREZID")
   
   resultado3 <- dose@result[order(dose@result$p.adjust),]
-  p2 <- ggplot(resultado3[1:20,], aes(x=Description, y=Count, fill=-log(p.adjust))) +
+  p2 <-
+    ggplot(resultado3[1:20,], aes(
+      x = Description,
+      y = Count,
+      fill = -log(p.adjust)
+    )) +
     geom_bar(stat = "identity") +
     coord_flip() +
-    scale_fill_continuous(low="blue", high="red") +
+    scale_fill_continuous(low = "blue", high = "red") +
     labs(x = "", y = "", fill = "p.adjust") +
-    theme(axis.text=element_text(size=11))  
-  ggsave(filename=file.path(directorio_salida,"patologias.jpeg"),plot=p2)
+    theme(axis.text = element_text(size = 11))
+  ggsave(filename = file.path(directorio_salida, "patologias.jpeg"),
+         plot = p2)
   
   
   pathos.list <- list()
   pathos <- resultado3
-  for(l in 1:dim(pathos)[1]){
-    repeticion <- length(unlist(strsplit(pathos$geneID[l],"/")))
-    pathos.list[[l]] <- data.frame(patologia =rep(pathos$Description[l],repeticion),
-                                   Gene.refGene = unlist(strsplit(pathos$geneID[l],"/")),
-                                   p_value = rep(pathos$pvalue[l],repeticion),
-                                   p_adjust = rep(pathos$p.adjust[l],repeticion))
+  for (l in 1:dim(pathos)[1]) {
+    repeticion <- length(unlist(strsplit(pathos$geneID[l], "/")))
+    pathos.list[[l]] <-
+      data.frame(
+        patologia = rep(pathos$Description[l], repeticion),
+        Gene.refGene = unlist(strsplit(pathos$geneID[l], "/")),
+        p_value = rep(pathos$pvalue[l], repeticion),
+        p_adjust = rep(pathos$p.adjust[l], repeticion)
+      )
     
     
   }
   
-  pathos.df <- (Reduce(rbind,pathos.list))
+  pathos.df <- (Reduce(rbind, pathos.list))
   
-  final <- left_join(exoma,pathos.df,by="Gene.refGene")
+  final <- left_join(exoma, pathos.df, by = "Gene.refGene")
   
   
   threshold <- 1
@@ -1626,35 +1702,46 @@ filtrado_vias <- function(output_dir,fastq_dir){
   retorno2 <- filtrado_2(retorno)
   retorno3 <- filtrado_3(retorno2)
   
-  directorio_salida.crudo <- file.path(directorio_salida,"filtrado_sin_comparar_vias")
-  if(!dir.exists(directorio_salida.crudo)){
+  directorio_salida.crudo <-
+    file.path(directorio_salida, "filtrado_sin_comparar_vias")
+  if (!dir.exists(directorio_salida.crudo)) {
     dir.create(directorio_salida.crudo)
   }
   
-  write.csv(final,file=file.path(directorio_salida.crudo, paste(
-    codigo,
-    paste0("crudo_patologia", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno, file = file.path(directorio_salida.crudo, paste(
-    codigo,
-    paste0("filtrado_1_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno2, file = file.path(directorio_salida.crudo, paste(
-    codigo,
-    paste0("filtrado_2_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno3, file = file.path(directorio_salida.crudo, paste(
-    codigo,
-    paste0("filtrado_3_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
+  write.csv(final, file = file.path(
+    directorio_salida.crudo,
+    paste(codigo,
+          paste0("crudo_patologia", threshold),
+          ".csv",
+          sep = "_")
+  ))
+  write.csv(retorno, file = file.path(
+    directorio_salida.crudo,
+    paste(
+      codigo,
+      paste0("filtrado_1_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
+  write.csv(retorno2, file = file.path(
+    directorio_salida.crudo,
+    paste(
+      codigo,
+      paste0("filtrado_2_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
+  write.csv(retorno3, file = file.path(
+    directorio_salida.crudo,
+    paste(
+      codigo,
+      paste0("filtrado_3_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
   
   threshold <- 0.02
   
@@ -1662,24 +1749,33 @@ filtrado_vias <- function(output_dir,fastq_dir){
   retorno2 <- filtrado_2(retorno)
   retorno3 <- filtrado_3(retorno2)
   
-  write.csv(retorno, file = file.path(directorio_salida.crudo, paste(
-    codigo,
-    paste0("filtrado_1_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno2, file = file.path(directorio_salida.crudo, paste(
-    codigo,
-    paste0("filtrado_2_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno3, file = file.path(directorio_salida.crudo, paste(
-    codigo,
-    paste0("filtrado_3_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
+  write.csv(retorno, file = file.path(
+    directorio_salida.crudo,
+    paste(
+      codigo,
+      paste0("filtrado_1_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
+  write.csv(retorno2, file = file.path(
+    directorio_salida.crudo,
+    paste(
+      codigo,
+      paste0("filtrado_2_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
+  write.csv(retorno3, file = file.path(
+    directorio_salida.crudo,
+    paste(
+      codigo,
+      paste0("filtrado_3_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
   
   ### ahroa vamos con la comparativa
   
@@ -1700,19 +1796,27 @@ filtrado_vias <- function(output_dir,fastq_dir){
     )
   
   
-  csa <- right_join(exoma,unicas,by = c("Chr","Start","End","Gene.refGene"))
+  csa <-
+    right_join(exoma, unicas, by = c("Chr", "Start", "End", "Gene.refGene"))
   #
   csa <- csa[!duplicated(csa$Start),]
   
   unicas_variantes  <- csa
   
-  directorio_salida.unicas.variantes <-  file.path(directorio_salida,
-                                                   "unicas_variantes")
-  if(!dir.exists(directorio_salida.unicas.variantes)){
+  directorio_salida.unicas.variantes <-
+    file.path(directorio_salida,
+              "unicas_variantes")
+  if (!dir.exists(directorio_salida.unicas.variantes)) {
     dir.create(directorio_salida.unicas.variantes)
   }
   
-  write.csv(unicas_variantes,file = file.path(directorio_salida.unicas.variantes,"pasunicas_variantes.csv"))
+  write.csv(
+    unicas_variantes,
+    file = file.path(
+      directorio_salida.unicas.variantes,
+      "pasunicas_variantes.csv"
+    )
+  )
   
   threshold <- 1
   
@@ -1721,35 +1825,49 @@ filtrado_vias <- function(output_dir,fastq_dir){
   retorno <- filtrado_1(exoma.comparado, threshold)
   retorno2 <- filtrado_2(retorno)
   retorno3 <- filtrado_3(retorno2)
-  directorio_salida.comparando <- file.path(directorio_salida,"comparando_bd_lab_vias")
-  if(!dir.exists(directorio_salida.comparando)){
+  directorio_salida.comparando <-
+    file.path(directorio_salida, "comparando_bd_lab_vias")
+  if (!dir.exists(directorio_salida.comparando)) {
     dir.create(directorio_salida.comparando)
   }
   
-  write.csv(exoma.comparado,file=file.path(directorio_salida.comparando, paste(
-    codigo,
-    paste0("crudo_patologia_vias", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno, file = file.path(directorio_salida.comparando, paste(
-    codigo,
-    paste0("filtrado_1_comparado_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno2, file = file.path(directorio_salida.comparando, paste(
-    codigo,
-    paste0("filtrado_2_comparado_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno3, file = file.path(directorio_salida.comparando, paste(
-    codigo,
-    paste0("filtrado_3_comparado_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
+  write.csv(exoma.comparado,
+            file = file.path(
+              directorio_salida.comparando,
+              paste(
+                codigo,
+                paste0("crudo_patologia_vias", threshold),
+                ".csv",
+                sep = "_"
+              )
+            ))
+  write.csv(retorno, file = file.path(
+    directorio_salida.comparando,
+    paste(
+      codigo,
+      paste0("filtrado_1_comparado_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
+  write.csv(retorno2, file = file.path(
+    directorio_salida.comparando,
+    paste(
+      codigo,
+      paste0("filtrado_2_comparado_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
+  write.csv(retorno3, file = file.path(
+    directorio_salida.comparando,
+    paste(
+      codigo,
+      paste0("filtrado_3_comparado_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
   
   threshold <- 0.02
   
@@ -1757,102 +1875,345 @@ filtrado_vias <- function(output_dir,fastq_dir){
   retorno2 <- filtrado_2(retorno)
   retorno3 <- filtrado_3(retorno2)
   
-  write.csv(retorno, file = file.path(directorio_salida.comparando, paste(
-    codigo,
-    paste0("filtrado_1_comparado_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno2, file = file.path(directorio_salida.comparando, paste(
-    codigo,
-    paste0("filtrado_2_comparado_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
-  write.csv(retorno3, file = file.path(directorio_salida.comparando, paste(
-    codigo,
-    paste0("filtrado_3_comparado_thresh_", threshold),
-    ".csv",
-    sep = "_"
-  )))
+  write.csv(retorno, file = file.path(
+    directorio_salida.comparando,
+    paste(
+      codigo,
+      paste0("filtrado_1_comparado_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
+  write.csv(retorno2, file = file.path(
+    directorio_salida.comparando,
+    paste(
+      codigo,
+      paste0("filtrado_2_comparado_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
+  write.csv(retorno3, file = file.path(
+    directorio_salida.comparando,
+    paste(
+      codigo,
+      paste0("filtrado_3_comparado_thresh_", threshold),
+      ".csv",
+      sep = "_"
+    )
+  ))
   
   
   
   
 }
 
-muestras <- c("407790")
-for (muestra in muestras) {
-  pipeline_dir <- "/repositorio/exomas/pipeline"
-  fastq_dir <- file.path(pipeline_dir, muestra, "fastqfiles")
-  output_dir <- file.path(pipeline_dir, muestra, "output_dirs")
-  folder_fasta <- "/repositorio/exomas/datos/datos_gatk/referencia"
-  folder_data_gatk <- "/repositorio/exomas/datos/datos_gatk"
+merge_annotation <- function(output_dir, folder_fasta) {
+  fastq_files <- list.files(fastq_dir, full.names = F)
+  output_file_name <-
+    unlist(strsplit(gsub("R[12]", "map", fastq_files[1]), "/"))
+  output_file_name <- file_path_sans_ext(output_file_name)
+  out_dir <- file.path(output_dir, "anotacion")
+  out_file_3 <-
+    file.path(out_dir, paste0(output_file_name, "anotacion_3.vcf"))
+  
+  codigo <- unlist(strsplit(output_file_name, "_"))[1]
+  
+  directorio <-
+    file.path(output_dir,
+              "post_process_results",
+              paste0(codigo, "_GATK_CODIGO_HPO/"))
+  
+  archivo <-
+    list.files(directorio, full.names = T, pattern = ".csv")
   
   
+  annovar <-
+    read.csv(
+      archivo,
+      header = T,
+      row.names = NULL,
+      na.strings = "."
+    )
   
+  command <-
+    paste(
+      "vk vcf2tsv long --print-header --ANN",
+      out_file_3,
+      ">",
+      file.path(
+        output_dir,
+        "post_process_results",
+        paste0(codigo, "_GATK_CODIGO_HPO/anotacion_snpeff.tsv")
+      )
+    )
   
+  system(command = command, intern = T)
   
-  if (!dir.exists(output_dir)) {
-    dir.create(output_dir)
+  snpeff_file <- file.path(
+    output_dir,
+    "post_process_results",
+    paste0(codigo, "_GATK_CODIGO_HPO/anotacion_snpeff.tsv")
+  )
+  
+  snpeff_data <- read.delim(snpeff_file, na.strings = ".")
+  
+  frecuencias <- c(
+    "dbNSFP_ExAC_NFE_AF",
+    "dbNSFP_ExAC_SAS_AF",
+    "dbNSFP_ExAC_Adj_AC",
+    "dbNSFP_ExAC_Adj_AF",
+    "dbNSFP_ExAC_SAS_AC",
+    "dbNSFP_1000Gp3_AMR_AF",
+    "dbNSFP_1000Gp3_AMR_AC",
+    "dbNSFP_1000Gp3_EAS_AC",
+    "dbNSFP_ExAC_AFR_AF",
+    "dbNSFP_ExAC_AFR_AC",
+    "dbNSFP_1000Gp3_AC",
+    "dbNSFP_1000Gp3_EAS_AF",
+    "dbNSFP_ExAC_AF",
+    "dbNSFP_ExAC_AC",
+    "dbNSFP_ExAC_FIN_AC",
+    "dbNSFP_ExAC_FIN_AF",
+    "dbNSFP_1000Gp3_EUR_AC",
+    "dbNSFP_1000Gp3_AFR_AC",
+    "dbNSFP_1000Gp3_EUR_AF",
+    "dbNSFP_ExAC_AMR_AF",
+    "dbNSFP_ESP6500_AA_AF",
+    "dbNSFP_ExAC_AMR_AC",
+    "dbNSFP_ExAC_NFE_AC",
+    "dbNSFP_1000Gp3_SAS_AC",
+    "dbNSFP_1000Gp3_SAS_AF",
+    "dbNSFP_ESP6500_AA_AC",
+    "dbNSFP_ESP6500_EA_AF",
+    "AF_TGP",
+    "AF_EXAC",
+    "AF_ESP",
+    "dbNSFP_ExAC_EAS_AC",
+    "dbNSFP_ExAC_EAS_AF",
+    "dbNSFP_ESP6500_EA_AC",
+    "dbNSFP_1000Gp3_AFR_AF"
+  )
+  
+  annovar$anotacion_anovar <- "ANNOVAR"
+  snpeff_data$anotacion_snpeff <- "SNPEFF"
+  onlyfreqs <- frecuencias[-grep("_AC$", frecuencias)]
+  aux_snpeff <-
+    as.data.frame(lapply(snpeff_data[, onlyfreqs], as.numeric))
+  aux_snpeff[is.na(aux_snpeff)] <- 0
+  freq_snpeff <- apply(aux_snpeff, 1, mean)
+  snpeff_data$freq_snpeff <- freq_snpeff
+  
+  hpo <-
+    read.delim("./genes_to_phenotype.txt",
+               skip = 1,
+               header = F)[, c(2, 4)]
+  
+  hpo_ <- aggregate(V4 ~ V2, hpo, FUN = paste, collapse = ";")
+  colnames(hpo_) <- c("gene_name", "hpo")
+  snpeff_data <- left_join(snpeff_data, hpo_, by = "gene_name")
+  snpeff_data <- buscar_herencia(snpeff_data)
+  
+  POS <- grep("Start", colnames(annovar))
+  END <- grep("End", colnames(annovar))
+  gene_name <- grep("^Gene.refGene$", colnames(annovar))
+  colnames(annovar)[c(POS, END, gene_name)] <-
+    c("POS", "END", "gene_name")
+  
+  common_fields <-
+    colnames(snpeff_data)[colnames(snpeff_data) %in% colnames(annovar)]
+  joint <- merge(annovar, snpeff_data, by = common_fields, all = T)
+  
+  joint <- joint[!duplicated(joint[, c("POS", "END")]),]
+  
+  joint <- joint[,-which(colnames(joint) %in% frecuencias),]
+  
+  orden_columnas <- c(
+    "codigo",
+    "anotacion_snpeff",
+    "anotacion_anovar",
+    "cigosidad",
+    "dominante",
+    "recesivo",
+    "CHROM",
+    "AF",
+    "POS",
+    "freq",
+    "Ref",
+    "Alt",
+    "REF",
+    "ALT",
+    "END",
+    "DP",
+    "GT",
+    "QUAL",
+    "gene_name",
+    "CLNHGVS",
+    "GeneDetail.refGene",
+    "ExonicFunc.refGene",
+    "AAChange.refGene",
+    "gene_id",
+    "impact",
+    "effect",
+    "feature_type",
+    "feature_id",
+    "transcript_biotype",
+    "exon_intron_rank",
+    "nt_change",
+    "aa_change",
+    "cDNA_position.cDNA_len",
+    "protein_position",
+    "distance_to_feature",
+    "error",
+    "LOF",
+    "NEGATIVE_TRAIN_SITE",
+    "POSITIVE_TRAIN_SITE",
+    "ORIGIN",
+    "CLNSIG",
+    "CLNDN",
+    "CLNREVSTAT",
+    "CLNDISDB",
+    "CLNALLELEID",
+    "CLNDNINCL",
+    "CLNVC",
+    "CLNVI",
+    "CLNSIGINCL",
+    "CLNSIGCONF",
+    "FILTER",
+    "avsnp150",
+    "RS",
+    "MutationTaster_pred",
+    "dbNSFP_MutationTaster_pred",
+    "Polyphen2_HVAR_pred",
+    "dbNSFP_Polyphen2_HVAR_pred",
+    "SIFT_pred",
+    "dbNSFP_SIFT_pred",
+    "Polyphen2_HDIV_pred",
+    "dbNSFP_Polyphen2_HDIV_pred",
+    "CADD_phred",
+    "hpo",
+    "F_GT"
+  )
+  
+  joint <- joint[, orden_columnas]
+  
+  joint$freq <- ifelse(is.na(joint$freq), freq_snpeff, joint$freq)
+  
+  joint <- joint[which(joint$FILTER == "PASS"),]
+  
+  joint$codigo  <- codigo
+  
+  auxfun <- function(x) {
+    if (x == "0/0" | x == "0|0") {
+      y <- "HOMZ_REF"
+    } else if (x == "0/1" | x == "0|1") {
+      y <- "HETZ"
+    } else if (!is.na(x)) {
+      y <- "HOMZ_ALT"
+    } else{
+      y <- NA
+    }
+    return(y)
   }
   
   
+  cigosidad_snpeff <- unlist(lapply(joint$F_GT, auxfun))
+  joint$cigosidad <-
+    ifelse(is.na(joint$cigosidad), cigosidad_snpeff, joint$cigosidad)
   
+  chromosomas <- c(paste0("chr", 1:22), "chrX", "chrY")
+  joint <- joint[joint$CHROM %in% chromosomas, ]
   
+  directorio_anotacion <- file.path(directorio,"combinacion")
+  if(!dir.exists(directorio_anotacion)){
+    dir.create(directorio_anotacion)
+  }
+  write.csv(joint, file.path(
+    directorio_anotacion,
+    paste0("anotacion_snpeff_annovar_combinada_", codigo, ".csv")
+  ))
   
-  control_calidad(fastq_dir, output_dir)
-  ### Solo se corre una vez por el genoma
-  index_fasta_samtools(folder_fasta = folder_fasta)
-  ### Indice genoma corre una vez
-  index_bwa(folder_fasta = folder_fasta)
-  ### Mapeamos
-  bwamem(fastq_dir = fastq_dir, folder_fasta = folder_fasta)
-  ### marcamos duplicados
-  markdups(output_dir = output_dir, fastq_dir = fastq_dir)
-  ## creamos diccionario
-  create_dict(folder_fasta)
-  ## anadimos reaad group
-  creacion_readgroup(output_dir, fastq_dir)
-  ## Recalibramos
-  base_recalibrator(folder_fasta, output_dir, folder_data_gatk, fastq_dir)
-  ### aplicamos el recalibrado
-  applybqsr(folder_fasta, output_dir, fastq_dir)
-  ## estadisticas del pieline bam
-  bam_statistics(folder_fasta, fastq_dir, output_dir)
-  ## llamamos a las variantes
-  haplotype_caller(output_dir, folder_fasta, fastq_dir)
-  ## Calculamos la probabilidad posterior del alelo referente
-  genotypeGVCF(folder_fasta, output_dir, fastq_dir)
-  ## calculamos variant Recalibrator
-  variantRecallibrator(fastq_dir, folder_fasta, folder_data_gatk, output_dir)
-  ## apply VQSR
-  applyVQSR(folder_fasta, fastq_dir, output_dir)
-  ## primer filtraje
-  variantFiltration(folder_fasta, output_dir, fastq_dir)
-  ## preparamos el archivo listo para elanalisis
-  analysisReady(folder_fasta, output_dir, fastq_dir)
-  ##
-  annovar(output_dir, fastq_dir, folder_fasta)
-  
-  computo_cobertura(output_dir, fastq_dir)
-  
-  computar_graficos(output_dir, fastq_dir)
-  
-  pretratado(output_dir, fastq_dir)
-  
-  computo_frecuencias(output_dir, fastq_dir)
-  # 
-  filtrado_general(output_dir, fastq_dir)
-  # 
-  filtrado_vias(output_dir,fastq_dir )
-  
-  # 
-  snpeff(output_dir,folder_fasta)
-  print(paste("YA TERMINO LA MUESTRA ", muestra))
   
 }
+
+args <- commandArgs(trailingOnly = TRUE)
+args <- unlist(strsplit(args," "))
+  muestras <- args
+  for (muestra in muestras) {
+    pipeline_dir <- "/repositorio/exomas/pipeline"
+    fastq_dir <- file.path(pipeline_dir, muestra, "fastqfiles")
+    output_dir <- file.path(pipeline_dir, muestra, "output_dirs")
+    folder_fasta <- "/repositorio/exomas/datos/datos_gatk/referencia"
+    folder_data_gatk <- "/repositorio/exomas/datos/datos_gatk"
+    
+    
+    
+    
+    
+    if (!dir.exists(output_dir)) {
+      dir.create(output_dir)
+    }
+    
+    
+    
+    
+    
+    control_calidad(fastq_dir, output_dir)
+    ### Solo se corre una vez por el genoma
+    index_fasta_samtools(folder_fasta = folder_fasta)
+    ### Indice genoma corre una vez
+    index_bwa(folder_fasta = folder_fasta)
+    ### Mapeamos
+    bwamem(fastq_dir = fastq_dir, folder_fasta = folder_fasta)
+    ### marcamos duplicados
+    markdups(output_dir = output_dir, fastq_dir = fastq_dir)
+    ## creamos diccionario
+    create_dict(folder_fasta)
+    ## anadimos reaad group
+    creacion_readgroup(output_dir, fastq_dir)
+    ## Recalibramos
+    base_recalibrator(folder_fasta, output_dir, folder_data_gatk, fastq_dir)
+    ### aplicamos el recalibrado
+    applybqsr(folder_fasta, output_dir, fastq_dir)
+    ## estadisticas del pieline bam
+    bam_statistics(folder_fasta, fastq_dir, output_dir)
+    ## llamamos a las variantes
+    haplotype_caller(output_dir, folder_fasta, fastq_dir)
+    ## Calculamos la probabilidad posterior del alelo referente
+    genotypeGVCF(folder_fasta, output_dir, fastq_dir)
+    ## calculamos variant Recalibrator
+    variantRecallibrator(fastq_dir, folder_fasta, folder_data_gatk, output_dir)
+    ## apply VQSR
+    applyVQSR(folder_fasta, fastq_dir, output_dir)
+    ## primer filtraje
+    variantFiltration(folder_fasta, output_dir, fastq_dir)
+    ## preparamos el archivo listo para elanalisis
+    analysisReady(folder_fasta, output_dir, fastq_dir)
+    ##
+    annovar(output_dir, fastq_dir, folder_fasta)
+    
+    computo_cobertura(output_dir, fastq_dir)
+    
+    computar_graficos(output_dir, fastq_dir)
+    
+    pretratado(output_dir, fastq_dir)
+    
+    computo_frecuencias(output_dir, fastq_dir)
+    #
+    filtrado_general(output_dir, fastq_dir)
+    #
+    filtrado_vias(output_dir, fastq_dir)
+    
+    #
+    snpeff(output_dir, folder_fasta)
+    
+    merge_annotation(output_dir, folder_fasta)
+    
+    print(paste("YA TERMINO LA MUESTRA ", muestra))
+    
+  }
+
+
 # ## anotamos
-## snpeff(output_dir,folder_fasta)
 # ## exportamos TSV
 # export_tsv(folder_fasta,output_dir ,fastq_dir)

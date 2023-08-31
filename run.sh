@@ -1,5 +1,5 @@
 #!/bin/bash
 
-nohup Rscript wgs_flujo.R > salida.out 2>&1 &
+nohup Rscript wgs_flujo.R $1  > salida.out 2>&1 &
 
 
