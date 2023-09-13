@@ -1366,7 +1366,7 @@ computo_frecuencias <- function(output_dir, fastq_dir) {
   
   cromosomas <- c(paste0("chr", 1:22), "chrX", "chrY")
   
-  
+  library(dplyr)
   df <- bind_rows(X_new) %>%
     select(codigo, cigosidad, AF, Chr, Start, End, Gene.refGene) %>% group_by(Chr, Start, End, Gene.refGene) %>%
     summarise(
@@ -1912,7 +1912,7 @@ merge_annotation <- function(output_dir, folder_fasta) {
   fastq_files <- list.files(fastq_dir, full.names = F)
   output_file_name <-
     unlist(strsplit(gsub("R[12]", "map", fastq_files[1]), "/"))
-  output_file_name <- file_path_sans_ext(output_file_name)
+  output_file_name <- tools::file_path_sans_ext(output_file_name)
   out_dir <- file.path(output_dir, "anotacion")
   out_file_3 <-
     file.path(out_dir, paste0(output_file_name, "anotacion_3.vcf"))
@@ -2022,7 +2022,8 @@ merge_annotation <- function(output_dir, folder_fasta) {
   
   common_fields <-
     colnames(snpeff_data)[colnames(snpeff_data) %in% colnames(annovar)]
-  joint <- merge(annovar, snpeff_data, by = common_fields, all = T)
+  
+  joint <- merge(annovar, snpeff_data,by=common_fields,all = T)
   
   joint <- joint[!duplicated(joint[, c("POS", "END")]),]
   
