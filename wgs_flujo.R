@@ -1109,33 +1109,19 @@ computar_graficos <- function(output_dir, fastq_dir) {
   }
 }
 
+
+
 buscar_herencia <- function(df) {
   vector_hpo <- df$hpo  # Vector de la columna "hpo"
   vector_valores <-
     strsplit(vector_hpo, ";")  # Separar los valores por el delimitador ";"
   vector_resultado1 <-
     sapply(vector_valores, function(x)
-      ifelse(grepl("dominant", x, ignore.case = T), "dominant", NA))
-  vector_resultado1 <-
-    unlist(lapply(vector_resultado1, function(x)
-      ifelse(all(is.na(
-        x
-      )), NA, x[which(!is.na(x))])))
-  vector_resultado2 <-
-    sapply(vector_valores, function(x)
-      ifelse(grepl("recessive", x, ignore.case = T), "recessive", NA))
-  vector_resultado2 <-
-    unlist(lapply(vector_resultado2, function(x)
-      ifelse(all(is.na(
-        x
-      )), NA, x[which(!is.na(x))])))
-  
-  # data frame resultado
-  df <- as.data.table(df)
-  df <-
-    bind_cols(dominante = vector_resultado1, recesivo = vector_resultado2, df)
+      paste(unique(x[grep("inheritance", ignore.case = T, x = x)]), sep = ",", collapse = ","))
+  df <- bind_cols(herencia = vector_resultado1, df)
   return(df)
 }
+
 pretratado <- function(output_dir, fastq_dir) {
   fastq_files <- list.files(fastq_dir, full.names = F)
   in_file <-
@@ -1364,7 +1350,7 @@ computo_frecuencias <- function(output_dir, fastq_dir) {
     summarise(AF = (sum(cigosidad == "HETZ") + 2 * sum(cigosidad == "HOMZ_ALT")) /
                 (2 * n()))
   
-  cromosomas <- c(paste0("chr", 1:22), "chrX", "chrY")
+  cromosomas <- c(paste0("chr", 1:22), "chrX", "chrY","chrM")
   
   library(dplyr)
   df <- bind_rows(X_new) %>%
@@ -2025,7 +2011,7 @@ merge_annotation <- function(output_dir, folder_fasta) {
   
   joint <- merge(annovar, snpeff_data,by=common_fields,all = T)
   
-  joint <- joint[!duplicated(joint[, c("POS", "END")]),]
+  # joint <- joint[!duplicated(joint[, c("POS", "END")]),]
   
   joint <- joint[,-which(colnames(joint) %in% frecuencias),]
   
@@ -2100,18 +2086,16 @@ merge_annotation <- function(output_dir, folder_fasta) {
   
   joint$freq <- ifelse(is.na(joint$freq), freq_snpeff, joint$freq)
   
-  joint <- joint[which(joint$FILTER == "PASS"),]
+  # joint <- joint[which(joint$FILTER == "PASS"),]
   
   joint$codigo  <- codigo
   
   auxfun <- function(x) {
-    if (x == "0/0" | x == "0|0") {
-      y <- "HOMZ_REF"
-    } else if (x == "0/1" | x == "0|1") {
+    if ((x == "0/1" | x == "0|1" |x == "1/2" | x == "1|2") & !is.na(x))  {
       y <- "HETZ"
     } else if (!is.na(x)) {
       y <- "HOMZ_ALT"
-    } else{
+    } else if(is.na(x)){
       y <- NA
     }
     return(y)
@@ -2122,7 +2106,7 @@ merge_annotation <- function(output_dir, folder_fasta) {
   joint$cigosidad <-
     ifelse(is.na(joint$cigosidad), cigosidad_snpeff, joint$cigosidad)
   
-  chromosomas <- c(paste0("chr", 1:22), "chrX", "chrY")
+  chromosomas <- c(paste0("chr", 1:22), "chrX", "chrY","chrM")
   joint <- joint[joint$CHROM %in% chromosomas, ]
   
   directorio_anotacion <- file.path(directorio,"combinacion")
